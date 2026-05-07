@@ -1,6 +1,6 @@
 {
   "name": "hamtrax",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hamtrax CLI — log POTA contacts and manage activations from your terminal or AI agent.",
   "type": "module",
   "license": "MIT",
@@ -8,10 +8,10 @@
   "homepage": "https://hamtrax.com/cli",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hammercreativellc/Hamtrax-CLI.git"
+    "url": "git+https://github.com/HammerCreativeLLC/Hamtrax-CLI.git"
   },
   "bugs": {
-    "url": "https://github.com/hammercreativellc/Hamtrax-CLI/issues"
+    "url": "https://github.com/HammerCreativeLLC/Hamtrax-CLI/issues"
   },
   "keywords": [
     "ham-radio",
