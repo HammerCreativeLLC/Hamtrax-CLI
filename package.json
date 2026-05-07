@@ -1,0 +1,60 @@
+{
+  "name": "hamtrax",
+  "version": "0.1.0",
+  "description": "Hamtrax CLI — log POTA contacts and manage activations from your terminal or AI agent.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Hamtrax",
+  "homepage": "https://hamtrax.com/cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hammercreativellc/Hamtrax-CLI.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hammercreativellc/Hamtrax-CLI/issues"
+  },
+  "keywords": [
+    "ham-radio",
+    "amateur-radio",
+    "pota",
+    "cli",
+    "hamtrax",
+    "logging"
+  ],
+  "main": "./dist/cli.js",
+  "bin": {
+    "hamtrax": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "postbuild": "node -e \"import('node:fs').then(fs => fs.chmodSync('dist/cli.js', 0o755))\"",
+    "dev": "tsx watch src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.2.1",
+    "cli-table3": "^0.6.5",
+    "commander": "^12.1.0",
+    "keytar": "^7.9.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@vitest/coverage-v8": "^2.1.8",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
