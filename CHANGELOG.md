@@ -4,6 +4,14 @@ All notable changes to `hamtrax` (the CLI) are documented here. The format follo
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-07
+
+### Fixed
+- `package.json` `repository.url` and `bugs.url` now use the canonical
+  GitHub case (`HammerCreativeLLC`) so npm provenance verification can match
+  the URL emitted by GitHub Actions. The 0.1.0 publish was rejected by npm
+  for this reason and never landed in the registry.
+
 ## [0.1.0] - 2026-05-07
 
 ### Added
