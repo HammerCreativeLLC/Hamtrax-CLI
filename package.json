@@ -2,7 +2,6 @@
   "name": "hamtrax",
   "version": "0.1.0",
   "description": "Hamtrax CLI — log POTA contacts and manage activations from your terminal or AI agent.",
-  "private": true,
   "type": "module",
   "license": "MIT",
   "author": "Hamtrax",
@@ -34,6 +33,10 @@
   ],
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

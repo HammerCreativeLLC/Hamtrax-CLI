@@ -50,7 +50,7 @@ import { HttpClient } from './util/http.js';
 import { printJson, setColorEnabled } from './util/output.js';
 
 const DEFAULT_API_BASE =
-  'https://us-central1-hamtrax.cloudfunctions.net/cliApi';
+  'https://us-central1-ham-radio-app-b818d.cloudfunctions.net/cliApi';
 
 function resolveApiBase(rootCmd: Command): string {
   const opts = rootCmd.opts() as { apiBase?: string };
