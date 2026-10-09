@@ -41,10 +41,12 @@ interface CreateOpts {
   timeOn?: string;
   notes?: string;
   name?: string;
+  idempotencyKey?: string;
 }
 
 interface DeleteOpts {
   yes?: boolean;
+  idempotencyKey?: string;
   /** Test seam — bypass real prompt. */
   promptConfirm?: () => Promise<boolean>;
 }
@@ -138,6 +140,7 @@ export function registerContacts(
     )
     .option('--notes <text>', 'Notes.')
     .option('--name <name>', "Operator's name.")
+    .option('--idempotency-key <key>', 'Reuse this identity when retrying the same create.')
     .option('--json', 'Emit JSON {id}.')
     .addHelpText(
       'after',
@@ -173,6 +176,7 @@ export function registerContacts(
         method: 'POST',
         path: 'v1/contacts',
         body,
+        ...(opts.idempotencyKey !== undefined && { idempotencyKey: opts.idempotencyKey }),
       });
       if (global.json) {
         printJson(created);
@@ -188,6 +192,7 @@ export function registerContacts(
     .argument('<qsoId>', 'Contact id to delete.')
     .description('Delete a QSO contact. Asks to confirm unless --yes.')
     .option('-y, --yes', 'Skip the confirmation prompt.')
+    .option('--idempotency-key <key>', 'Reuse this identity when retrying the same delete.')
     .option('--json', 'Emit JSON {id, success}.')
     .addHelpText(
       'after',
@@ -224,6 +229,7 @@ export function registerContacts(
       await client.request<DeleteContactResponse>({
         method: 'DELETE',
         path: `v1/contacts/${encodeURIComponent(qsoId)}`,
+        ...(opts.idempotencyKey !== undefined && { idempotencyKey: opts.idempotencyKey }),
       });
       if (global.json) {
         printJson({ id: qsoId, success: true });

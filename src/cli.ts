@@ -47,17 +47,12 @@ import {
   mapApiErrorToExitCode,
 } from './util/errors.js';
 import { HttpClient } from './util/http.js';
+import { DEFAULT_API_BASE, resolveApiBase as resolveSharedApiBase } from './util/apiBase.js';
 import { printJson, setColorEnabled } from './util/output.js';
-
-const DEFAULT_API_BASE =
-  'https://us-central1-ham-radio-app-b818d.cloudfunctions.net/cliApi';
 
 function resolveApiBase(rootCmd: Command): string {
   const opts = rootCmd.opts() as { apiBase?: string };
-  if (opts.apiBase && opts.apiBase.length > 0) return opts.apiBase;
-  const fromEnv = process.env.HAMTRAX_API_BASE;
-  if (fromEnv && fromEnv.length > 0) return fromEnv;
-  return DEFAULT_API_BASE;
+  return resolveSharedApiBase(opts.apiBase);
 }
 
 function buildContext(rootCmd: Command): CommandContext {
@@ -380,6 +375,17 @@ export function buildProgram(): Command {
   registerFolders(program, ctx);
   registerContacts(program, ctx);
   registerActivations(program, ctx);
+
+  program
+    .command('mcp')
+    .description('Start the local MCP server over stdin/stdout; reads only by default.')
+    .option('--allow-writes', 'Expose contact and activation creation tools.')
+    .option('--allow-deletes', 'Expose contact deletion with an exact confirmation.')
+    .addHelpText('after', '\nExamples:\n  $ hamtrax mcp\n  $ hamtrax mcp --allow-writes\n')
+    .action(async (opts: { allowWrites?: boolean; allowDeletes?: boolean }) => {
+      const { startHamtraxMcpStdio } = await import('./mcp/stdio.js');
+      await startHamtraxMcpStdio({ ...opts, apiBase: resolveApiBase(program) });
+    });
 
   // -------- help --all --------
   program

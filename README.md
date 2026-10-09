@@ -1,6 +1,6 @@
 # Hamtrax CLI
 
-`hamtrax` is the official command-line client for [Hamtrax](https://hamtrax.com) — log POTA contacts, manage activations, and inspect your station's data straight from your terminal or an AI agent.
+`hamtrax` is the official command-line client and MCP server for [Hamtrax](https://hamtrax.com) — log POTA contacts, manage activations, and inspect your station's data straight from your terminal or an AI assistant.
 
 The CLI is a thin wrapper over Hamtrax's HTTP API (`/v1/*`). Every command is non-interactive when given enough flags, returns JSON via `--json`/`--ndjson`, and uses deterministic exit codes — so it's safe to drive from shell scripts, CI, or LLM agent loops.
 
@@ -13,6 +13,73 @@ npm install -g hamtrax
 ```
 
 Requires Node.js >= 20.
+
+---
+
+## MCP for AI assistants
+
+Authenticate once with `hamtrax auth login`, then add this local stdio server to
+your MCP client's configuration:
+
+```json
+{
+  "mcpServers": {
+    "hamtrax": {
+      "command": "hamtrax-mcp"
+    }
+  }
+}
+```
+
+`hamtrax mcp` runs the same server. It reuses your CLI credential storage and
+endpoint configuration. API keys are never entered into tool arguments or
+returned to the assistant. Standard output contains only MCP messages.
+
+The default exposes four read tools: `whoami`, `list_folders`, `list_contacts`,
+and `list_activations`. Each list call returns one page (50 rows by default,
+maximum 200); use its cursor to request the next page. Results contain logbook
+summaries and contact details, excluding private account IDs, credential fields,
+and precise coordinates.
+
+To allow creation, add `"args": ["--allow-writes"]` to the server configuration.
+This enables `create_contact` and `create_activation`. To also allow deletion,
+use `"args": ["--allow-writes", "--allow-deletes"]` with an elevated API key.
+The server's local options and the API key's permissions both apply.
+
+Every write tool requires an `idempotency_key`; use a unique UUID and reuse it
+with identical arguments after a timeout. Contact creation requires an explicit
+`time_on`, and activation creation requires `start_time`, so retries keep the same
+UTC day. Deletion requires the exact confirmation `DELETE <qso_id>` after user
+approval.
+
+Creating an activation finds or creates its same-day folder and can reopen an
+existing activation. It sends no POTA spot. Saving a contact may also sync it to
+an enabled QRZ connection; deleting through Hamtrax does not delete the QRZ
+counterpart. Confirm the intended operation with the user before invoking a
+write tool. Folder ownership, matching park/month, free-tier caps, and rate limits
+are enforced by Hamtrax's existing API.
+
+### Hosted integrations
+
+The same `createHamtraxMcpServer` registry is exported as `hamtrax/mcp` for
+Hamtrax's OAuth-protected remote service. Its host provides the authenticated
+`request` adapter and granted `read`, `write`, or `delete` scopes. Both ESM and
+CommonJS consumers are supported. `hamtrax/http` exports the shared `HttpClient`,
+`RequestOptions`, and `ApiError` contract; no hosted adapter needs a copy of the
+tool definitions or logbook rules.
+
+```ts
+import { createHamtraxMcpServer } from 'hamtrax/mcp';
+import { HttpClient } from 'hamtrax/http';
+
+const server = createHamtraxMcpServer({
+  version: 'your-deployment-version',
+  scopes: ['read'],
+  authentication: 'apiKey',
+  client: new HttpClient({ apiBase: yourApiBase, apiKey: yourStoredKey }),
+});
+// Connect server to the standard MCP transport supplied by your host.
+```
 
 ---
 
@@ -77,6 +144,11 @@ Every command supports `--json` (single object). List commands also support `--n
 | `hamtrax contacts delete <qsoId> --yes` | Delete a QSO. |
 | `hamtrax activations list [--in-progress]` | List activations. |
 | `hamtrax activations create --reference K-1234 --callsign K1ABC` | Start (or upsert) a POTA activation. |
+| `hamtrax mcp [--allow-writes] [--allow-deletes]` | Serve the local MCP tools over stdio. |
+
+Contact creation, deletion, and activation creation also accept
+`--idempotency-key <unique-operation-id>` for safe retries through the same HTTP
+header used by MCP. Supply the same timestamp and fields on a retry.
 
 ---
 

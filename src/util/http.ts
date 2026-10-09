@@ -41,6 +41,8 @@ export interface RequestOptions {
   body?: unknown;
   /** Optional AbortSignal hook. */
   signal?: AbortSignal;
+  /** Stable caller identity for a retried mutation; never put it in the body. */
+  idempotencyKey?: string;
 }
 
 export class HttpClient {
@@ -76,6 +78,9 @@ export class HttpClient {
       Accept: 'application/json',
       'User-Agent': this.userAgent,
     };
+    if (opts.idempotencyKey !== undefined) {
+      headers['Idempotency-Key'] = opts.idempotencyKey;
+    }
     let body: string | undefined;
     if (opts.body !== undefined) {
       body = JSON.stringify(opts.body);

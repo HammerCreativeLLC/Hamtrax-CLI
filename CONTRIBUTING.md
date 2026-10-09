@@ -7,29 +7,19 @@ Thanks for considering a contribution! This package lives at https://github.com/
 ```bash
 npm install
 npm run dev          # tsx watch on src/cli.ts
-npm test             # vitest run
+npm test             # fresh build, then vitest protocol/command suites
 npm run lint         # tsc --noEmit
-npm run build        # emit dist/
+npm run build        # emit ESM dist/ and shared CommonJS dist-cjs/
 ```
 
-The package is **ESM** (`"type": "module"` in `package.json`) and targets Node >= 20.
+The executables are ESM and target Node >= 20. Shared `hamtrax/mcp` and
+`hamtrax/http` exports support both ESM and CommonJS.
 
 ## Project layout
 
-```
-src/
-  cli.ts          # entry point; wires Commander, dispatches to handlers
-  auth/           # login, set-key, status, logout, panic-revoke + storage
-  commands/       # whoami / folders / contacts / activations registrations
-  util/
-    http.ts       # fetch wrapper, ApiError / NetworkError
-    errors.ts     # exit-code mapping, formatErrorForStderr
-    output.ts     # printJson / printNdjson / printTable / printKeyValue
-  types.ts        # wire types — single source of truth for the API contract
-  version.ts      # CLI_VERSION (from package.json) and API_VERSION
-test/
-  auth/ commands/ util/   # vitest suites; mock fetch / fs / keytar / prompts
-```
+Start at [PROJECT_BRIEF.md](PROJECT_BRIEF.md) and follow the owning source or
+test brief. The MCP registry is shared by local and hosted entry points; the
+HTTP API remains the owner of account, folder, and mutation policy.
 
 ## Pull-request checklist
 
@@ -54,7 +44,9 @@ test/
 1. Update `CHANGELOG.md` (move `[Unreleased]` to a new dated section).
 2. Bump `package.json` version.
 3. `npm run lint && npm test && npm run build`.
-4. `npm publish` (maintainers only).
+4. Merge the reviewed change after CI passes, then push the matching `v<version>`
+   tag. The `Release to npm` GitHub Actions workflow builds/tests and publishes
+   with npm provenance using the repository's maintainer token.
 
 ## License
 
