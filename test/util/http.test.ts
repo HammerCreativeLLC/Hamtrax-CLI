@@ -21,6 +21,14 @@ function makeResponse(opts: {
 }
 
 describe('HttpClient.request', () => {
+  it('forwards mutation identity through the one Idempotency-Key header', async () => {
+    const fetchImpl = vi.fn(async () => makeResponse({ status: 201, body: { id: 'q1', replayed: false } }));
+    const client = new HttpClient({ apiBase: 'https://api.example.com', apiKey: 'local-secret', fetchImpl: fetchImpl as unknown as typeof fetch });
+    await client.request({ method: 'POST', path: 'v1/contacts', body: { callsign: 'K1ABC' }, idempotencyKey: 'operation-1' });
+    const init = fetchImpl.mock.calls[0]![1] as RequestInit;
+    expect((init.headers as Record<string, string>)['Idempotency-Key']).toBe('operation-1');
+    expect(init.body).not.toContain('idempotency');
+  });
   it('parses 200 ok body', async () => {
     const fetchImpl = vi.fn(
       async () => makeResponse({ status: 200, body: { ok: true } }),

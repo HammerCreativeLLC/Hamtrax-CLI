@@ -1,7 +1,7 @@
 {
   "name": "hamtrax",
-  "version": "0.1.1",
-  "description": "Hamtrax CLI — log POTA contacts and manage activations from your terminal or AI agent.",
+  "version": "0.2.0",
+  "description": "Hamtrax CLI and MCP server — inspect logbooks, log POTA contacts, and manage activations.",
   "type": "module",
   "license": "MIT",
   "author": "Hamtrax",
@@ -19,14 +19,48 @@
     "pota",
     "cli",
     "hamtrax",
-    "logging"
+    "logging",
+    "mcp",
+    "model-context-protocol"
   ],
   "main": "./dist/cli.js",
   "bin": {
-    "hamtrax": "./dist/cli.js"
+    "hamtrax": "./dist/cli.js",
+    "hamtrax-mcp": "./dist/mcp/cli.js"
+  },
+  "exports": {
+    ".": "./dist/cli.js",
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp/server.d.ts",
+        "default": "./dist/mcp/server.js"
+      },
+      "require": {
+        "types": "./dist-cjs/mcp/server.d.ts",
+        "default": "./dist-cjs/mcp/server.js"
+      }
+    },
+    "./http": {
+      "import": {
+        "types": "./dist/util/http.d.ts",
+        "default": "./dist/util/http.js"
+      },
+      "require": {
+        "types": "./dist-cjs/util/http.d.ts",
+        "default": "./dist-cjs/util/http.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "mcp": ["dist/mcp/server.d.ts"],
+      "http": ["dist/util/http.d.ts"]
+    }
   },
   "files": [
     "dist",
+    "dist-cjs",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -39,19 +73,24 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "postbuild": "node -e \"import('node:fs').then(fs => fs.chmodSync('dist/cli.js', 0o755))\"",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json",
+    "postbuild": "node scripts/finishBuild.mjs",
     "dev": "tsx watch src/cli.ts",
+    "pretest": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.2.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
-    "keytar": "^7.9.0",
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.5"
+  },
+  "optionalDependencies": {
+    "keytar": "^7.9.0"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",

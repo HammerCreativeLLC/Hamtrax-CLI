@@ -1,7 +1,7 @@
 /**
  * Wire types for the Hamtrax CLI HTTP API. These mirror the shapes returned
  * by `cloudFunctionsNonClient/src/cli/router.ts` and its handlers — the CLI
- * is the only consumer of this contract today, so anything here is part of
+ * and MCP adapter consume this contract, so anything here is part of
  * the public surface. Bump `API_VERSION` if you have to break a field name.
  */
 
@@ -63,6 +63,8 @@ export interface ContactItem {
   rstReceived?: string;
   notes?: string;
   name?: string;
+  sig?: string;
+  sigInfo?: string;
   mySig?: string;
   mySigInfo?: string;
   imported?: boolean;
@@ -88,16 +90,22 @@ export interface CreateContactRequest {
   rstReceived?: string;
   notes?: string;
   name?: string;
+  sig?: string;
+  sigInfo?: string;
+  mySig?: string;
+  mySigInfo?: string;
 }
 
 /** POST /v1/contacts response. */
 export interface CreateContactResponse {
   id: string;
+  replayed?: boolean;
 }
 
 /** DELETE /v1/contacts/:id response. */
 export interface DeleteContactResponse {
   success: true;
+  replayed?: boolean;
 }
 
 /** POST /v1/activations request body. */

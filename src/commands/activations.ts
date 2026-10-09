@@ -28,6 +28,7 @@ interface CreateOpts {
   program?: string;
   locationName?: string;
   startTime?: string;
+  idempotencyKey?: string;
 }
 
 export function registerActivations(
@@ -92,6 +93,7 @@ export function registerActivations(
     .option('--program <id>', 'Program id (defaults to POTA).', 'POTA')
     .option('--location-name <name>', 'Human-readable location name.')
     .option('--start-time <iso>', 'ISO-8601 start time. Defaults to server time.')
+    .option('--idempotency-key <key>', 'Reuse this identity when retrying the same activation.')
     .option('--json', 'Emit JSON {id, name, autoFolderKey, created}.')
     .addHelpText(
       'after',
@@ -117,6 +119,7 @@ export function registerActivations(
         method: 'POST',
         path: 'v1/activations',
         body,
+        ...(opts.idempotencyKey !== undefined && { idempotencyKey: opts.idempotencyKey }),
       });
       if (global.json) {
         printJson(result);
