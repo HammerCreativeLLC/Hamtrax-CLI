@@ -88,7 +88,7 @@ export function protocolOutputSchema(success: z.ZodObject) {
 
 export function redactSecrets(text: string): string {
   return text
-    .replace(/\bhtx_(?:live|mcp|access|refresh|code)_[A-Za-z0-9_-]+\b/g, '[redacted]')
+    .replace(/(?:htx_(?:live|mcp|access|refresh|code)_|htxmcp_|htxrfr_)[A-Za-z0-9_-]+/g, '[redacted]')
     .replace(/\bBearer\s+[^\s,;]+/gi, 'Bearer [redacted]')
     .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[redacted]')
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');

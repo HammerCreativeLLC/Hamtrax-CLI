@@ -98,6 +98,14 @@ describe('Hamtrax MCP protocol', () => {
     expect(result.structuredContent).toEqual({ items: [{ id: 'q1', callsign: 'K2XYZ', notes: 'Key [redacted] and Bearer [redacted]' }] });
   });
 
+  it('redacts the hosted access and refresh token formats, including a trailing hyphen', async () => {
+    const access = `htxmcp_${'a'.repeat(42)}-`;
+    const refresh = `htxrfr_${'b'.repeat(43)}`;
+    const { client } = await connect({ items: [{ id: 'q1', notes: `Saved ${access} and ${refresh}` }] });
+    const result = await client.callTool({ name: 'list_contacts', arguments: { folder_id: 'f1' } });
+    expect(result.structuredContent).toEqual({ items: [{ id: 'q1', notes: 'Saved [redacted] and [redacted]' }] });
+  });
+
   it('rejects a path traversal, oversized page, and unexpected fields before any request', async () => {
     const { client, request } = await connect();
     for (const arguments_ of [{ folder_id: '../other' }, { folder_id: 'f1', limit: 201 }, { folder_id: 'f1', api_key: 'hidden-value' }]) {
