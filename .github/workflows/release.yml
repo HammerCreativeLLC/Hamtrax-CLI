@@ -1,9 +1,16 @@
-name: Release to npm
+name: Release Hamtrax
 
 on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      publish_npm:
+        description: 'Publish this version tag to npm after a valid NPM_TOKEN is supplied.'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   publish:
@@ -12,6 +19,15 @@ jobs:
       contents: write
       id-token: write
     steps:
+      - name: Require a version tag for manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          if [[ "$RELEASE_REF" != refs/tags/v* ]]; then
+            echo '::error::Dispatch this workflow on a v* tag.'
+            exit 1
+          fi
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
@@ -22,11 +38,15 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm pack
       - uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push'
         with:
           generate_release_notes: true
           files: |
             dist/cli.js
+            hamtrax-*.tgz
+      - run: npm publish --provenance --access public
+        if: github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/v') && inputs.publish_npm == true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -8,12 +8,12 @@ The CLI is a thin wrapper over Hamtrax's HTTP API (`/v1/*`). Every command is no
 
 ## Installation
 
-MCP support requires Hamtrax 0.2.0 or newer. npm publication of 0.2.1 is pending;
+MCP support requires Hamtrax 0.2.0 or newer. npm publication of 0.3.0 is pending;
 the registry's current `latest` is 0.1.1, which includes the CLI without MCP.
-Install the official [GitHub release](https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/tag/v0.2.1):
+Install the official [GitHub release](https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/tag/v0.3.0):
 
 ```bash
-npm install -g https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/download/v0.2.1/hamtrax-0.2.1.tgz
+npm install -g https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/download/v0.3.0/hamtrax-0.3.0.tgz
 ```
 
 Requires Node.js >= 20.
@@ -22,7 +22,7 @@ Requires Node.js >= 20.
 
 ## MCP for AI assistants
 
-After installing the 0.2.1 release above, authenticate once with `hamtrax auth login`,
+After installing the 0.3.0 release above, authenticate once with `hamtrax auth login`,
 then add this local stdio server to your MCP client's configuration:
 
 ```json
@@ -146,13 +146,18 @@ Every command supports `--json` (single object). List commands also support `--n
 | `hamtrax contacts list --folder <id>`   | Page through QSOs in a folder. |
 | `hamtrax contacts create ...`           | Log a new QSO. |
 | `hamtrax contacts delete <qsoId> --yes` | Delete a QSO. |
-| `hamtrax activations list [--in-progress]` | List activations. |
+| `hamtrax activations list [--in-progress] [--limit <n>] [--cursor <cursor>]` | Page through activations. |
 | `hamtrax activations create --reference K-1234 --callsign K1ABC` | Start (or upsert) a POTA activation. |
 | `hamtrax mcp [--allow-writes] [--allow-deletes]` | Serve the local MCP tools over stdio. |
 
 Contact creation, deletion, and activation creation also accept
 `--idempotency-key <unique-operation-id>` for safe retries through the same HTTP
 header used by MCP. Supply the same timestamp and fields on a retry.
+
+Activation lists return one page per call. Use `--json` to retain the response's
+cursor, then pass it to `--cursor` for the next page. With `--in-progress`, a page
+can be empty and still have a cursor; continue until the cursor is absent.
+`--limit` sets the maximum folders scanned per page, subject to the server cap.
 
 ---
 
