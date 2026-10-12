@@ -8,12 +8,12 @@ The CLI is a thin wrapper over Hamtrax's HTTP API (`/v1/*`). Every command is no
 
 ## Installation
 
-MCP support requires Hamtrax 0.2.0. npm publication of 0.2.0 is pending;
+MCP support requires Hamtrax 0.2.0 or newer. npm publication of 0.2.1 is pending;
 the registry's current `latest` is 0.1.1, which includes the CLI without MCP.
-Install the official [GitHub release](https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/tag/v0.2.0):
+Install the official [GitHub release](https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/tag/v0.2.1):
 
 ```bash
-npm install -g https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/download/v0.2.0/hamtrax-0.2.0.tgz
+npm install -g https://github.com/HammerCreativeLLC/Hamtrax-CLI/releases/download/v0.2.1/hamtrax-0.2.1.tgz
 ```
 
 Requires Node.js >= 20.
@@ -22,7 +22,7 @@ Requires Node.js >= 20.
 
 ## MCP for AI assistants
 
-Install the 0.2.0 release above, authenticate once with `hamtrax auth login`,
+After installing the 0.2.1 release above, authenticate once with `hamtrax auth login`,
 then add this local stdio server to your MCP client's configuration:
 
 ```json
