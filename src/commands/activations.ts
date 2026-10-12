@@ -13,6 +13,7 @@ import type {
   FolderItem,
   PaginatedList,
 } from '../types.js';
+import { InvalidUsageError } from '../util/errors.js';
 import {
   color,
   printJson,
@@ -43,6 +44,8 @@ export function registerActivations(
     .command('list')
     .description('List activations.')
     .option('--in-progress', 'Only show activations currently in progress.')
+    .option('--limit <n>', 'Max activation folders scanned per page (server caps).')
+    .option('--cursor <cursor>', 'Opaque cursor from a prior page.')
     .option('--json', 'Emit a single JSON object {items, cursor}.')
     .option('--ndjson', 'Emit one JSON object per line.')
     .addHelpText(
@@ -52,13 +55,24 @@ export function registerActivations(
         'Examples:',
         '  $ hamtrax activations list',
         '  $ hamtrax activations list --in-progress --json',
+        '  $ hamtrax activations list --in-progress --limit 50 --cursor <cursor> --json',
       ].join('\n'),
     )
-    .action(async (opts: { inProgress?: boolean }, cmd: Command) => {
+    .action(async (opts: { inProgress?: boolean; limit?: string; cursor?: string }, cmd: Command) => {
       const global = readGlobalOptions(cmd);
       const client = await ctx.httpClient();
-      const query: Record<string, string | boolean | undefined> = {};
+      const query: Record<string, string | number | boolean | undefined> = {};
       if (opts.inProgress) query.inProgress = true;
+      if (opts.limit !== undefined) {
+        const n = Number(opts.limit);
+        if (!Number.isFinite(n) || n <= 0) {
+          throw new InvalidUsageError(
+            `--limit must be a positive integer, got '${opts.limit}'.`,
+          );
+        }
+        query.limit = n;
+      }
+      if (opts.cursor) query.cursor = opts.cursor;
       const result = await client.request<PaginatedList<FolderItem>>({
         method: 'GET',
         path: 'v1/activations',

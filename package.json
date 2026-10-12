@@ -1,6 +1,6 @@
 {
   "name": "hamtrax",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Hamtrax CLI and MCP server — inspect logbooks, log POTA contacts, and manage activations.",
   "type": "module",
   "license": "MIT",

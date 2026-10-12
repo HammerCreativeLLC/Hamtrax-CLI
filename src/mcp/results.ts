@@ -133,8 +133,14 @@ export function projectOutput(schema: z.ZodType, raw: unknown): Record<string, u
   return sanitize(schema.parse(normalizeListTimes(raw))) as Record<string, unknown>;
 }
 
+function resultContent(text: string, output: Record<string, unknown>): CallToolResult['content'] {
+  // Text-only clients receive the same already projected/sanitized data; raw
+  // API responses never enter this compatibility serialization.
+  return [{ type: 'text', text: redactSecrets(text) }, { type: 'text', text: JSON.stringify(output) }];
+}
+
 export function successResult(text: string, output: Record<string, unknown>): CallToolResult {
-  return { content: [{ type: 'text', text: redactSecrets(text) }], structuredContent: output };
+  return { content: resultContent(text, output), structuredContent: output };
 }
 
 const errorCodes = new Set([
@@ -176,5 +182,5 @@ export function errorResult(error: unknown): CallToolResult {
   } else if (error instanceof z.ZodError) {
     output.message = 'Hamtrax returned an unexpected response.';
   }
-  return { isError: true, content: [{ type: 'text', text: String(output.message) }], structuredContent: output };
+  return { isError: true, content: resultContent(String(output.message), output), structuredContent: output };
 }

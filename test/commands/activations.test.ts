@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CommandContext } from '../../src/commands/context.js';
 import { registerActivations } from '../../src/commands/activations.js';
+import { InvalidUsageError } from '../../src/util/errors.js';
 import { setColorEnabled } from '../../src/util/output.js';
 
 interface FakeClient {
@@ -109,6 +110,30 @@ describe('activations commands', () => {
     expect(out).toContain('K-1234');
     expect(out).toContain('fld_xyz');
     expect(out).toContain('started');
+  });
+
+  it.each([{ kind: 'empty', items: [] }, { kind: 'sparse', items: [{ id: 'a1', name: 'Started park' }] }])('list forwards one page request and preserves the cursor for a $kind page', async ({ items }) => {
+    const page = { items, cursor: 'next-scanned-folder' };
+    const client: FakeClient = { request: vi.fn(async () => page) };
+    const program = new Command('hamtrax');
+    program.option('--json');
+    program.option('--ndjson');
+    registerActivations(program, makeCtx(client));
+    await program.parseAsync(['activations', 'list', '--in-progress', '--limit', '50', '--cursor', 'previous-scanned-folder', '--json'], { from: 'user' });
+    expect(client.request).toHaveBeenCalledTimes(1);
+    expect(client.request).toHaveBeenCalledWith({
+      method: 'GET', path: 'v1/activations',
+      query: { inProgress: true, limit: 50, cursor: 'previous-scanned-folder' },
+    });
+    expect(JSON.parse(writes.join('').trim())).toEqual(page);
+  });
+
+  it.each(['0', '-1', 'NaN', 'Infinity'])('list rejects invalid --limit %s before making a request', async limit => {
+    const client: FakeClient = { request: vi.fn() };
+    const program = new Command('hamtrax');
+    registerActivations(program, makeCtx(client));
+    await expect(program.parseAsync(['activations', 'list', '--limit', limit], { from: 'user' })).rejects.toBeInstanceOf(InvalidUsageError);
+    expect(client.request).not.toHaveBeenCalled();
   });
 
   it('create --json emits the response object', async () => {

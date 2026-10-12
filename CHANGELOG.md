@@ -4,6 +4,17 @@ All notable changes to `hamtrax` (the CLI and MCP server) are documented here. T
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-12
+
+### Added
+- `--limit` and `--cursor` on `activations list`, with one bounded page per call.
+
+### Changed
+- Pagination guidance preserves cursors on empty in-progress activation pages;
+  continue with the same filters until the cursor is absent.
+- MCP results include the same privacy-safe JSON in text and structured content
+  for clients that consume text results. Tool annotations reuse existing titles.
+
 ## [0.2.1] - 2026-10-12
 
 ### Changed

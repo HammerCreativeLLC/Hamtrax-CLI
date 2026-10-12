@@ -43,8 +43,8 @@ export interface FolderItem {
   [key: string]: unknown;
 }
 
-/** Paginated list envelope — `cursor` is opaque, present only when more
- * pages exist. */
+/** Paginated list envelope. An opaque cursor means another page may be needed,
+ * even when items is empty; continue until it is absent. */
 export interface PaginatedList<T> {
   items: T[];
   cursor?: string;

@@ -36,6 +36,14 @@ afterEach(async () => {
   }
 });
 
+function expectJsonText(result: { content?: unknown; structuredContent?: unknown }): void {
+  expect(result.content).toEqual([
+    { type: 'text', text: expect.any(String) }, { type: 'text', text: expect.any(String) },
+  ]);
+  const content = result.content as Array<{ text: string }>;
+  expect(JSON.parse(content[1]!.text)).toEqual(result.structuredContent);
+}
+
 describe('Hamtrax MCP protocol', () => {
   it('can initialize with no granted scopes without exposing any actions', async () => {
     const { client, request } = await connect({}, []);
@@ -49,7 +57,7 @@ describe('Hamtrax MCP protocol', () => {
     expect(tools.map((tool) => tool.name)).toEqual(['whoami', 'list_folders', 'list_contacts', 'list_activations']);
     for (const tool of tools) {
       expect(tool.title).toBeTruthy();
-      expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true });
+      expect(tool.annotations).toMatchObject({ title: tool.title, readOnlyHint: true, destructiveHint: false, openWorldHint: false, idempotentHint: true });
       expect(tool._meta?.securitySchemes).toEqual([{ type: 'oauth2', scopes: ['read'] }]);
       expect(tool.inputSchema.additionalProperties).toBe(false);
       expect(tool.outputSchema?.type).toBe('object');
@@ -62,6 +70,10 @@ describe('Hamtrax MCP protocol', () => {
     const { client, sent } = await connect({}, ['read', 'write', 'delete']);
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name)).toEqual(['whoami', 'list_folders', 'list_contacts', 'list_activations', 'create_contact', 'create_activation', 'delete_contact']);
+    for (const tool of tools) {
+      expect(tool.annotations?.title).toBeTruthy();
+      expect(tool.annotations?.title).toBe(tool.title);
+    }
     expect(tools.find((tool) => tool.name === 'create_contact')?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false, openWorldHint: true });
     expect(tools.find((tool) => tool.name === 'create_activation')?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: false });
     expect(tools.find((tool) => tool.name === 'delete_contact')?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: false });
@@ -76,11 +88,14 @@ describe('Hamtrax MCP protocol', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it('reads whoami through the existing request seam and strips private fields', async () => {
-    const { client, request } = await connect({ callsign: 'K1ABC', plan: 'free', tier: 'basic', nativeQsoCount: 7, userId: 'private-uid', apiKey: 'secret' });
+  it.each(['K1ABC', ''])('reads whoami callsign %j through the existing request seam and makes only public fields available to text-only clients', async callsign => {
+    const { client, request } = await connect({ callsign, plan: 'free', tier: 'basic', nativeQsoCount: 7, userId: 'private-uid', apiKey: 'secret', location: { latitude: 38.123456 }, unknownField: 'private-extra' });
     const result = await client.callTool({ name: 'whoami', arguments: {} });
     expect(request).toHaveBeenCalledWith(expect.objectContaining({ method: 'GET', path: 'v1/whoami', signal: expect.any(AbortSignal) }));
-    expect(result.structuredContent).toEqual({ callsign: 'K1ABC', plan: 'free', tier: 'basic', nativeQsoCount: 7 });
+    expect(result.structuredContent).toEqual({ callsign, plan: 'free', tier: 'basic', nativeQsoCount: 7 });
+    expectJsonText(result);
+    expect((result.content as Array<{ text: string }>)[0]!.text).toBe(`Connected Hamtrax account: ${callsign || 'callsign not set'}.`);
+    for (const privateValue of ['private-uid', 'secret', '38.123456', 'unknownField', 'private-extra']) expect(JSON.stringify(result)).not.toContain(privateValue);
   });
 
   it('keeps pagination one page, forwards server filters, and removes precise locations', async () => {
@@ -89,6 +104,8 @@ describe('Hamtrax MCP protocol', () => {
     expect(request).toHaveBeenCalledOnce();
     expect(request).toHaveBeenCalledWith(expect.objectContaining({ method: 'GET', path: 'v1/folders', query: { type: 'activation', limit: 5, cursor: 'prior-page' } }));
     expect(result.structuredContent).toEqual({ items: [{ id: 'f1', name: 'October', startTime: new Date(1791504000000).toISOString() }], cursor: 'next-page' });
+    expectJsonText(result);
+    for (const privateValue of ['userId', 'latitude', 'longitude', '38.123456', '-94.123456', 'equipment', 'secret']) expect(JSON.stringify(result)).not.toContain(privateValue);
   });
 
   it('reads contacts by a single folder path and redacts credentials inside saved notes', async () => {
@@ -96,6 +113,8 @@ describe('Hamtrax MCP protocol', () => {
     const result = await client.callTool({ name: 'list_contacts', arguments: { folder_id: 'f1', limit: 10 } });
     expect(request).toHaveBeenCalledWith(expect.objectContaining({ method: 'GET', path: 'v1/folders/f1/contacts', query: { limit: 10 } }));
     expect(result.structuredContent).toEqual({ items: [{ id: 'q1', callsign: 'K2XYZ', notes: 'Key [redacted] and Bearer [redacted]' }] });
+    expectJsonText(result);
+    for (const privateValue of ['htx_live_', 'secret-token', 'myLatitude', 'myLocation', 'userId', '38.123456', '-94.123456']) expect(JSON.stringify(result)).not.toContain(privateValue);
   });
 
   it('redacts the hosted access and refresh token formats, including a trailing hyphen', async () => {
@@ -104,6 +123,9 @@ describe('Hamtrax MCP protocol', () => {
     const { client } = await connect({ items: [{ id: 'q1', notes: `Saved ${access} and ${refresh}` }] });
     const result = await client.callTool({ name: 'list_contacts', arguments: { folder_id: 'f1' } });
     expect(result.structuredContent).toEqual({ items: [{ id: 'q1', notes: 'Saved [redacted] and [redacted]' }] });
+    expectJsonText(result);
+    expect(JSON.stringify(result)).not.toContain(access);
+    expect(JSON.stringify(result)).not.toContain(refresh);
   });
 
   it('rejects a path traversal, oversized page, and unexpected fields before any request', async () => {
@@ -127,6 +149,7 @@ describe('Hamtrax MCP protocol', () => {
     expect(request).not.toHaveBeenCalled();
     const result = await client.callTool({ name: 'create_contact', arguments: { ...arguments_, idempotency_key: 'contact-1', sig: 'POTA', sig_info: 'US-1234', my_sig: 'POTA', my_sig_info: 'US-5678', rst_sent: '59' } });
     expect(result.structuredContent).toEqual({ id: 'q1', replayed: false });
+    expectJsonText(result);
     expect(request).toHaveBeenCalledWith(expect.objectContaining({ method: 'POST', path: 'v1/contacts', idempotencyKey: 'contact-1', body: expect.objectContaining({ folderId: 'f1', callsign: 'K2XYZ', frequency: 14.074, mode: 'FT8', timeOn: '2026-10-09T14:00:00Z', sig: 'POTA', sigInfo: 'US-1234', mySig: 'POTA', mySigInfo: 'US-5678', rstSent: '59' }) }));
   });
 
@@ -138,7 +161,8 @@ describe('Hamtrax MCP protocol', () => {
     expect(request).toHaveBeenCalledOnce();
     expect(request).toHaveBeenCalledWith(expect.objectContaining({ method: 'POST', path: 'v1/activations', idempotencyKey: 'activation-1', body: expect.objectContaining({ callsign: 'K1ABC', locationReference: 'K-1234', startTime: '2026-10-09T14:00:00Z' }) }));
     expect(result.structuredContent).toMatchObject({ id: 'a1', created: false });
-    expect(result.content).toEqual([{ type: 'text', text: 'Activation folder a1 reused. No POTA spot was sent.' }]);
+    expectJsonText(result);
+    expect((result.content as Array<{ text: string }>)[0]!.text).toBe('Activation folder a1 reused. No POTA spot was sent.');
   });
 
   it('binds explicit deletion confirmation to the requested contact ID', async () => {
@@ -149,6 +173,7 @@ describe('Hamtrax MCP protocol', () => {
     const result = await client.callTool({ name: 'delete_contact', arguments: { ...arguments_, confirmation: 'DELETE q1' } });
     expect(request).toHaveBeenCalledWith(expect.objectContaining({ method: 'DELETE', path: 'v1/contacts/q1', idempotencyKey: 'delete-1' }));
     expect(result.structuredContent).toEqual({ success: true, replayed: true });
+    expectJsonText(result);
   });
 
   it('keeps canonical error code, status and quota context while removing keys', async () => {
@@ -158,15 +183,20 @@ describe('Hamtrax MCP protocol', () => {
     const result = await client.callTool({ name: 'whoami', arguments: {} });
     expect(result.isError).toBe(true);
     expect(result.structuredContent).toEqual({ error: 'rate_limited', message: 'Retry [redacted]', status: 429, requestId: 'request-1', retryAfter: '30', details: { resetSeconds: 30, limit: 120 } });
+    expectJsonText(result);
+    expect((result.content as Array<{ text: string }>)[0]!.text).toBe('Retry [redacted]');
+    for (const privateValue of ['htx_live_', 'apiKey', 'secret', 'rawIp', '1.2.3.4']) expect(JSON.stringify(result)).not.toContain(privateValue);
   });
 
   it('does not expose transport causes or malformed response data', async () => {
     const { client } = await connect({}, ['read'], () => { throw new NetworkError('Bearer secret-token at private-ip'); });
     const error = await client.callTool({ name: 'whoami', arguments: {} });
+    expectJsonText(error);
     expect(JSON.stringify(error)).not.toContain('secret-token');
     const malformed = await connect({ privateToken: 'secret' });
     const result = await malformed.client.callTool({ name: 'whoami', arguments: {} });
     expect(result.isError).toBe(true);
+    expectJsonText(result);
     expect(JSON.stringify(result)).not.toContain('privateToken');
   });
 });

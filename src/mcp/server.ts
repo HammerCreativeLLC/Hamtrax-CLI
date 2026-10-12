@@ -148,7 +148,7 @@ export function createHamtraxMcpServer(options: HamtraxMcpServerOptions): McpSer
     const securitySchemes: SecurityScheme[] = options.authentication === 'apiKey'
       ? [{ type: 'noauth' }]
       : [{ type: 'oauth2', scopes: [action.scope] }];
-    const annotations = { readOnlyHint: action.scope === 'read', destructiveHint: action.destructive, openWorldHint: action.openWorld, idempotentHint: true };
+    const annotations = { title: action.title, readOnlyHint: action.scope === 'read', destructiveHint: action.destructive, openWorldHint: action.openWorld, idempotentHint: true };
     const meta = { securitySchemes };
     const outputSchema = protocolOutputSchema(action.output);
     server.registerTool(action.name, {
