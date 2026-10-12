@@ -4,6 +4,12 @@ All notable changes to `hamtrax` (the CLI and MCP server) are documented here. T
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-12
+
+### Changed
+- Tool descriptions state approval preconditions, parameter contracts, and side
+  effects as facts. Initialization retains the shared model safety guidance.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added

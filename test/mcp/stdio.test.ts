@@ -24,7 +24,7 @@ describe('packaged Hamtrax MCP entry points', () => {
     transport.stderr?.on('data', (data) => { stderr += String(data); });
     try {
       await client.connect(transport);
-      expect(client.getServerVersion()?.version).toBe('0.2.0');
+      expect(client.getServerVersion()?.version).toBe('0.2.1');
       const { tools } = await client.listTools();
       expect(tools.map((tool) => tool.name)).toEqual(['whoami', 'list_folders', 'list_contacts', 'list_activations']);
       expect(tools[0]?._meta?.securitySchemes).toEqual([{ type: 'noauth' }]);
@@ -56,7 +56,7 @@ describe('packaged Hamtrax MCP entry points', () => {
     const { HttpClient, ApiError } = require('hamtrax/http') as typeof import('../../src/util/http.js');
     const metadata = require('hamtrax/package.json') as { version: string };
     expect(typeof HttpClient).toBe('function');
-    expect(metadata.version).toBe('0.2.0');
+    expect(metadata.version).toBe('0.2.1');
     const server = createHamtraxMcpServer({
       version: metadata.version,
       client: { async request<T>(): Promise<T> { throw new ApiError({ status: 403, code: 'tier_insufficient', message: 'Requires elevated tier.' }); } },
